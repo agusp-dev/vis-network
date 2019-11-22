@@ -5,7 +5,7 @@
  * A dynamic, browser-based visualization library.
  *
  * @version 0.0.0-no-version
- * @date    2019-11-21T20:21:45Z
+ * @date    2019-11-22T20:02:09Z
  *
  * @copyright (c) 2011-2017 Almende B.V, http://almende.com
  * @copyright (c) 2018-2019 visjs contributors, https://github.com/visjs
@@ -50532,14 +50532,37 @@
 	      this.inMode = 'delete';
 	      var selectedNodes = this.selectionHandler.getSelectedNodes();
 	      var selectedEdges = this.selectionHandler.getSelectedEdges();
+	      console.log("selectedNodes");
+	      console.log(selectedNodes);
+	      console.log("selectedEdges");
+	      console.log(selectedEdges);
 	      var deleteFunction = undefined;
 
 	      if (selectedNodes.length > 0) {
 	        for (var i = 0; i < selectedNodes.length; i++) {
 	          if (this.body.nodes[selectedNodes[i]].isCluster === true) {
 	            //alert(this.options.locales[this.options.locale]['deleteClusterError'] || this.options.locales['en']['deleteClusterError']);
-	            alert(stringify$2(this.body.nodes[selectedNodes[i]]));
-	            return;
+	            console.log(this.body.nodes[selectedNodes[i]]);
+
+	            var cluster = assign$2({}, this.body.nodes[selectedNodes[i]]);
+
+	            console.log("cluster contained");
+	            console.log(cluster.containedNodes);
+	            console.log("body:");
+	            console.log(this.body); //this.body.data.nodes.getDataSet().remove(cluster.containedNodes);
+	            //selectedNodes.concat(Object.assign({}, cluster.containedNodes))
+	            //selectedNodes.concat(Object.assign({}, cluster.containedEdges))
+
+	            console.log(selectedNodes);
+
+	            for (var key in cluster.containedNodes) {
+	              selectedNodes.push(cluster.containedNodes[key].id);
+	            } // delete selectedNodes[i]
+	            //
+
+
+	            console.log(selectedNodes); //this.body.data.edges.getDataSet().remove(culster_nodes)
+	            //return;
 	          }
 	        }
 
@@ -50547,6 +50570,13 @@
 	          deleteFunction = this.options.deleteNode;
 	        }
 	      } else if (selectedEdges.length > 0) {
+	        for (var _i = 0; _i < selectedEdges.length; _i++) {
+	          var clusterInEdge = assign$2({}, this.body.nodes[selectedEdges[_i]]);
+
+	          console.log("clusterInEdge");
+	          console.log(clusterInEdge);
+	        }
+
 	        if (typeof this.options.deleteEdge === 'function') {
 	          deleteFunction = this.options.deleteEdge;
 	        }
@@ -51054,12 +51084,12 @@
 	      } // _clean temporary nodes
 
 
-	      for (var _i = 0; _i < this.temporaryIds.nodes.length; _i++) {
+	      for (var _i2 = 0; _i2 < this.temporaryIds.nodes.length; _i2++) {
 	        var _context27;
 
-	        delete this.body.nodes[this.temporaryIds.nodes[_i]];
+	        delete this.body.nodes[this.temporaryIds.nodes[_i2]];
 
-	        var indexTempNode = indexOf$3(_context27 = this.body.nodeIndices).call(_context27, this.temporaryIds.nodes[_i]);
+	        var indexTempNode = indexOf$3(_context27 = this.body.nodeIndices).call(_context27, this.temporaryIds.nodes[_i2]);
 
 	        if (indexTempNode !== -1) {
 	          var _context28;
@@ -51182,7 +51212,8 @@
 	      if (node !== undefined && this.selectedControlNode !== undefined) {
 	        if (node.isCluster === true) {
 	          //alert(this.options.locales[this.options.locale]['createEdgeError'] || this.options.locales['en']['createEdgeError'])
-	          alert(stringify$2(node));
+	          console.log("uno");
+	          console.log(node);
 	        } else {
 	          var from = this.body.nodes[this.temporaryIds.nodes[0]];
 
@@ -51222,31 +51253,49 @@
 
 	        if (node !== undefined) {
 	          if (node.isCluster === true) {
+	            // CREANDO UN EDGE DESDE UN CLUSTER
 	            //alert(this.options.locales[this.options.locale]['createEdgeError'] || this.options.locales['en']['createEdgeError'])
-	            alert(stringify$2(node));
-	          } else {
-	            // create a node the temporary line can look at
-	            var targetNode = this._getNewTargetNode(node.x, node.y);
+	            console.log(node);
+	            var x = node.x;
+	            var y = node.y;
+	            console.log("x:" + x + "y:" + y);
+	            var cid = node.id;
+	            var internal_node = {};
 
-	            this.body.nodes[targetNode.id] = targetNode;
-	            this.body.nodeIndices.push(targetNode.id); // create a temporary edge
-
-	            var connectionEdge = this.body.functions.createEdge({
-	              id: 'connectionEdge' + uuid4(),
-	              from: node.id,
-	              to: targetNode.id,
-	              physics: false,
-	              smooth: {
-	                enabled: true,
-	                type: 'continuous',
-	                roundness: 0.5
+	            for (var key in node.containedNodes) {
+	              if (node.containedNodes[key].options.cpos === "last") {
+	                internal_node = node.containedNodes[key];
 	              }
-	            });
-	            this.body.edges[connectionEdge.id] = connectionEdge;
-	            this.body.edgeIndices.push(connectionEdge.id);
-	            this.temporaryIds.nodes.push(targetNode.id);
-	            this.temporaryIds.edges.push(connectionEdge.id);
-	          }
+	            }
+
+	            node = internal_node;
+	            console.log(pointer);
+	            console.log(node);
+	            node.x = x;
+	            node.y = y;
+	          } // create a node the temporary line can look at
+
+
+	          var targetNode = this._getNewTargetNode(node.x, node.y);
+
+	          this.body.nodes[targetNode.id] = targetNode;
+	          this.body.nodeIndices.push(targetNode.id); // create a temporary edge
+
+	          var connectionEdge = this.body.functions.createEdge({
+	            id: 'connectionEdge' + uuid4(),
+	            from: node.id,
+	            to: targetNode.id,
+	            physics: false,
+	            smooth: {
+	              enabled: true,
+	              type: 'continuous',
+	              roundness: 0.5
+	            }
+	          });
+	          this.body.edges[connectionEdge.id] = connectionEdge;
+	          this.body.edgeIndices.push(connectionEdge.id);
+	          this.temporaryIds.nodes.push(targetNode.id);
+	          this.temporaryIds.edges.push(connectionEdge.id);
 	        }
 
 	        this.touchTime = new Date().valueOf();
@@ -51346,11 +51395,28 @@
 	      if (node !== undefined) {
 	        if (node.isCluster === true) {
 	          //alert(this.options.locales[this.options.locale]['createEdgeError'] || this.options.locales['en']['createEdgeError']);
-	          alert(stringify$2(node));
-	        } else {
-	          if (this.body.nodes[connectFromId] !== undefined && this.body.nodes[node.id] !== undefined) {
-	            this._performAddEdge(connectFromId, node.id);
+	          console.log("dos");
+	          console.log(node);
+	          var x = node.x;
+	          var y = node.y;
+	          console.log("x:" + x + "y:" + y);
+	          var cid = node.id;
+	          var internal_node = {};
+
+	          for (var key in node.containedNodes) {
+	            if (node.containedNodes[key].options.cpos === "first") {
+	              internal_node = node.containedNodes[key];
+	            }
 	          }
+
+	          node = internal_node;
+	          console.log(node);
+	          node.x = x;
+	          node.y = y;
+	        }
+
+	        if (this.body.nodes[connectFromId] !== undefined && this.body.nodes[node.id] !== undefined) {
+	          this._performAddEdge(connectFromId, node.id);
 	        }
 	      }
 
