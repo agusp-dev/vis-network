@@ -5,7 +5,7 @@
  * A dynamic, browser-based visualization library.
  *
  * @version 0.0.0-no-version
- * @date    2019-11-22T20:02:09Z
+ * @date    2019-11-28T19:31:31Z
  *
  * @copyright (c) 2011-2017 Almende B.V, http://almende.com
  * @copyright (c) 2018-2019 visjs contributors, https://github.com/visjs
@@ -50532,49 +50532,67 @@
 	      this.inMode = 'delete';
 	      var selectedNodes = this.selectionHandler.getSelectedNodes();
 	      var selectedEdges = this.selectionHandler.getSelectedEdges();
-	      console.log("selectedNodes");
-	      console.log(selectedNodes);
-	      console.log("selectedEdges");
-	      console.log(selectedEdges);
 	      var deleteFunction = undefined;
 
 	      if (selectedNodes.length > 0) {
+	        var _selectedNodes = [];
+	        var internalNodes = [];
+
 	        for (var i = 0; i < selectedNodes.length; i++) {
 	          if (this.body.nodes[selectedNodes[i]].isCluster === true) {
-	            //alert(this.options.locales[this.options.locale]['deleteClusterError'] || this.options.locales['en']['deleteClusterError']);
-	            console.log(this.body.nodes[selectedNodes[i]]);
-
 	            var cluster = assign$2({}, this.body.nodes[selectedNodes[i]]);
 
-	            console.log("cluster contained");
-	            console.log(cluster.containedNodes);
-	            console.log("body:");
-	            console.log(this.body); //this.body.data.nodes.getDataSet().remove(cluster.containedNodes);
-	            //selectedNodes.concat(Object.assign({}, cluster.containedNodes))
-	            //selectedNodes.concat(Object.assign({}, cluster.containedEdges))
-
-	            console.log(selectedNodes);
-
 	            for (var key in cluster.containedNodes) {
-	              selectedNodes.push(cluster.containedNodes[key].id);
-	            } // delete selectedNodes[i]
-	            //
+	              internalNodes.push(cluster.containedNodes[key].id);
 
-
-	            console.log(selectedNodes); //this.body.data.edges.getDataSet().remove(culster_nodes)
-	            //return;
+	              if (cluster.containedNodes[key].options.cpos === "first") {
+	                _selectedNodes.push(cluster.containedNodes[key].id);
+	              }
+	            }
+	          } else {
+	            _selectedNodes.push(this.body.nodes[selectedNodes[i]].id);
 	          }
 	        }
+
+	        selectedNodes = concat$2(selectedNodes).call(selectedNodes, internalNodes); // callback signal
+
+	        this.body.signalCallback("deleteNodes", _selectedNodes);
 
 	        if (typeof this.options.deleteNode === 'function') {
 	          deleteFunction = this.options.deleteNode;
 	        }
 	      } else if (selectedEdges.length > 0) {
 	        for (var _i = 0; _i < selectedEdges.length; _i++) {
-	          var clusterInEdge = assign$2({}, this.body.nodes[selectedEdges[_i]]);
+	          var _context18;
 
-	          console.log("clusterInEdge");
-	          console.log(clusterInEdge);
+	          if (includes$4(_context18 = selectedEdges[_i]).call(_context18, "clusterEdge")) {
+	            var clusterInEdge = assign$2({}, this.body.edges[selectedEdges[_i]]);
+
+	            for (var xid in clusterInEdge.clusteringEdgeReplacingIds) {
+	              if (clusterInEdge.clusteringEdgeReplacingIds.hasOwnProperty(xid)) {
+	                var replacedId = clusterInEdge.clusteringEdgeReplacingIds[xid]; //let replacedId = clusterInEdge.clusteringEdgeReplacingIds[0] // USA EL PRIMER ITEM, DEBERIA SER EL UNICO
+
+	                selectedEdges.push(replacedId);
+	                var edgeRepl = this.body.edges[replacedId];
+	                var dataEdgeRepl = {
+	                  id: edgeRepl.id,
+	                  from: edgeRepl.fromId,
+	                  to: edgeRepl.toId
+	                };
+	                this.body.signalCallback("deleteEdges", dataEdgeRepl);
+	              }
+	            } //let replacedId = clusterInEdge.clusteringEdgeReplacingIds[0] // USA EL PRIMER ITEM, DEBERIA SER EL UNICO
+	            //selectedEdges.push(replacedId)
+
+	          } else {
+	            var _edgeRepl = this.body.edges[selectedEdges[_i]];
+	            var _dataEdgeRepl = {
+	              id: _edgeRepl.id,
+	              from: _edgeRepl.fromId,
+	              to: _edgeRepl.toId
+	            };
+	            this.body.signalCallback("deleteEdges", _dataEdgeRepl);
+	          }
 	        }
 
 	        if (typeof this.options.deleteEdge === 'function') {
@@ -50721,7 +50739,7 @@
 	  }, {
 	    key: "_createEditButton",
 	    value: function _createEditButton() {
-	      var _context18;
+	      var _context19;
 
 	      // restore everything to it's original state (if applicable)
 	      this._clean(); // reset the manipulationDOM
@@ -50737,7 +50755,7 @@
 
 	      this.editModeDiv.appendChild(button); // bind a hammer listener to the button, calling the function toggleEditMode.
 
-	      this._bindHammerToDiv(button, bind$2(_context18 = this.toggleEditMode).call(_context18, this));
+	      this._bindHammerToDiv(button, bind$2(_context19 = this.toggleEditMode).call(_context19, this));
 	    }
 	    /**
 	     * this function cleans up after everything this module does. Temporary elements, functions and events are removed, physics restored, hammers removed.
@@ -50843,13 +50861,13 @@
 	  }, {
 	    key: "_createAddNodeButton",
 	    value: function _createAddNodeButton(locale) {
-	      var _context19;
+	      var _context20;
 
 	      var button = this._createButton('addNode', 'vis-button vis-add', locale['addNode'] || this.options.locales['en']['addNode']);
 
 	      this.manipulationDiv.appendChild(button);
 
-	      this._bindHammerToDiv(button, bind$2(_context19 = this.addNodeMode).call(_context19, this));
+	      this._bindHammerToDiv(button, bind$2(_context20 = this.addNodeMode).call(_context20, this));
 	    }
 	    /**
 	     *
@@ -50860,13 +50878,13 @@
 	  }, {
 	    key: "_createAddEdgeButton",
 	    value: function _createAddEdgeButton(locale) {
-	      var _context20;
+	      var _context21;
 
 	      var button = this._createButton('addEdge', 'vis-button vis-connect', locale['addEdge'] || this.options.locales['en']['addEdge']);
 
 	      this.manipulationDiv.appendChild(button);
 
-	      this._bindHammerToDiv(button, bind$2(_context20 = this.addEdgeMode).call(_context20, this));
+	      this._bindHammerToDiv(button, bind$2(_context21 = this.addEdgeMode).call(_context21, this));
 	    }
 	    /**
 	     *
@@ -50877,13 +50895,13 @@
 	  }, {
 	    key: "_createEditNodeButton",
 	    value: function _createEditNodeButton(locale) {
-	      var _context21;
+	      var _context22;
 
 	      var button = this._createButton('editNode', 'vis-button vis-edit', locale['editNode'] || this.options.locales['en']['editNode']);
 
 	      this.manipulationDiv.appendChild(button);
 
-	      this._bindHammerToDiv(button, bind$2(_context21 = this.editNode).call(_context21, this));
+	      this._bindHammerToDiv(button, bind$2(_context22 = this.editNode).call(_context22, this));
 	    }
 	    /**
 	     *
@@ -50894,13 +50912,13 @@
 	  }, {
 	    key: "_createEditEdgeButton",
 	    value: function _createEditEdgeButton(locale) {
-	      var _context22;
+	      var _context23;
 
 	      var button = this._createButton('editEdge', 'vis-button vis-edit', locale['editEdge'] || this.options.locales['en']['editEdge']);
 
 	      this.manipulationDiv.appendChild(button);
 
-	      this._bindHammerToDiv(button, bind$2(_context22 = this.editEdgeMode).call(_context22, this));
+	      this._bindHammerToDiv(button, bind$2(_context23 = this.editEdgeMode).call(_context23, this));
 	    }
 	    /**
 	     *
@@ -50911,7 +50929,7 @@
 	  }, {
 	    key: "_createDeleteButton",
 	    value: function _createDeleteButton(locale) {
-	      var _context23;
+	      var _context24;
 
 	      var deleteBtnClass;
 
@@ -50925,7 +50943,7 @@
 
 	      this.manipulationDiv.appendChild(button);
 
-	      this._bindHammerToDiv(button, bind$2(_context23 = this.deleteSelected).call(_context23, this));
+	      this._bindHammerToDiv(button, bind$2(_context24 = this.deleteSelected).call(_context24, this));
 	    }
 	    /**
 	     *
@@ -50936,13 +50954,13 @@
 	  }, {
 	    key: "_createBackButton",
 	    value: function _createBackButton(locale) {
-	      var _context24;
+	      var _context25;
 
 	      var button = this._createButton('back', 'vis-button vis-back', locale['back'] || this.options.locales['en']['back']);
 
 	      this.manipulationDiv.appendChild(button);
 
-	      this._bindHammerToDiv(button, bind$2(_context24 = this.showManipulatorToolbar).call(_context24, this));
+	      this._bindHammerToDiv(button, bind$2(_context25 = this.showManipulatorToolbar).call(_context25, this));
 	    }
 	    /**
 	     *
@@ -51069,32 +51087,32 @@
 	    value: function _cleanupTemporaryNodesAndEdges() {
 	      // _clean temporary edges
 	      for (var i = 0; i < this.temporaryIds.edges.length; i++) {
-	        var _context25;
+	        var _context26;
 
 	        this.body.edges[this.temporaryIds.edges[i]].disconnect();
 	        delete this.body.edges[this.temporaryIds.edges[i]];
 
-	        var indexTempEdge = indexOf$3(_context25 = this.body.edgeIndices).call(_context25, this.temporaryIds.edges[i]);
+	        var indexTempEdge = indexOf$3(_context26 = this.body.edgeIndices).call(_context26, this.temporaryIds.edges[i]);
 
 	        if (indexTempEdge !== -1) {
-	          var _context26;
+	          var _context27;
 
-	          splice$2(_context26 = this.body.edgeIndices).call(_context26, indexTempEdge, 1);
+	          splice$2(_context27 = this.body.edgeIndices).call(_context27, indexTempEdge, 1);
 	        }
 	      } // _clean temporary nodes
 
 
 	      for (var _i2 = 0; _i2 < this.temporaryIds.nodes.length; _i2++) {
-	        var _context27;
+	        var _context28;
 
 	        delete this.body.nodes[this.temporaryIds.nodes[_i2]];
 
-	        var indexTempNode = indexOf$3(_context27 = this.body.nodeIndices).call(_context27, this.temporaryIds.nodes[_i2]);
+	        var indexTempNode = indexOf$3(_context28 = this.body.nodeIndices).call(_context28, this.temporaryIds.nodes[_i2]);
 
 	        if (indexTempNode !== -1) {
-	          var _context28;
+	          var _context29;
 
-	          splice$2(_context28 = this.body.nodeIndices).call(_context28, indexTempNode, 1);
+	          splice$2(_context29 = this.body.nodeIndices).call(_context29, indexTempNode, 1);
 	        }
 	      }
 
@@ -51255,10 +51273,8 @@
 	          if (node.isCluster === true) {
 	            // CREANDO UN EDGE DESDE UN CLUSTER
 	            //alert(this.options.locales[this.options.locale]['createEdgeError'] || this.options.locales['en']['createEdgeError'])
-	            console.log(node);
 	            var x = node.x;
 	            var y = node.y;
-	            console.log("x:" + x + "y:" + y);
 	            var cid = node.id;
 	            var internal_node = {};
 
@@ -51269,8 +51285,6 @@
 	            }
 
 	            node = internal_node;
-	            console.log(pointer);
-	            console.log(node);
 	            node.x = x;
 	            node.y = y;
 	          } // create a node the temporary line can look at
@@ -51296,6 +51310,7 @@
 	          this.body.edgeIndices.push(connectionEdge.id);
 	          this.temporaryIds.nodes.push(targetNode.id);
 	          this.temporaryIds.edges.push(connectionEdge.id);
+	          this.body.signalCallback("createEdge", connectionEdge);
 	        }
 
 	        this.touchTime = new Date().valueOf();
@@ -51327,10 +51342,10 @@
 	      var node = undefined;
 
 	      for (var i = overlappingNodeIds.length - 1; i >= 0; i--) {
-	        var _context29;
+	        var _context30;
 
 	        // if the node id is NOT a temporary node, accept the node.
-	        if (indexOf$3(_context29 = this.temporaryIds.nodes).call(_context29, overlappingNodeIds[i]) === -1) {
+	        if (indexOf$3(_context30 = this.temporaryIds.nodes).call(_context30, overlappingNodeIds[i]) === -1) {
 	          node = this.body.nodes[overlappingNodeIds[i]];
 	          break;
 	        }
@@ -51379,10 +51394,10 @@
 	      var node = undefined;
 
 	      for (var i = overlappingNodeIds.length - 1; i >= 0; i--) {
-	        var _context30;
+	        var _context31;
 
 	        // if the node id is NOT a temporary node, accept the node.
-	        if (indexOf$3(_context30 = this.temporaryIds.nodes).call(_context30, overlappingNodeIds[i]) === -1) {
+	        if (indexOf$3(_context31 = this.temporaryIds.nodes).call(_context31, overlappingNodeIds[i]) === -1) {
 	          node = this.body.nodes[overlappingNodeIds[i]];
 	          break;
 	        }
@@ -51395,11 +51410,8 @@
 	      if (node !== undefined) {
 	        if (node.isCluster === true) {
 	          //alert(this.options.locales[this.options.locale]['createEdgeError'] || this.options.locales['en']['createEdgeError']);
-	          console.log("dos");
-	          console.log(node);
 	          var x = node.x;
 	          var y = node.y;
-	          console.log("x:" + x + "y:" + y);
 	          var cid = node.id;
 	          var internal_node = {};
 
@@ -51410,7 +51422,6 @@
 	          }
 
 	          node = internal_node;
-	          console.log(node);
 	          node.x = x;
 	          node.y = y;
 	        }
@@ -51424,6 +51435,7 @@
 	        from: connectFromId,
 	        to: node ? node.id : undefined
 	      };
+	      this.body.signalCallback("createEdge", event.controlEdge);
 
 	      this.selectionHandler._generateClickEvent('controlNodeDragEnd', event, pointer); // No need to do _generateclickevent('dragEnd') here, the regular dragEnd event fires.
 
